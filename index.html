@@ -109,6 +109,7 @@
   .bar-wrap{display:flex;align-items:center;gap:8px}
   .bar-track{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;min-width:40px}
   .bar-fill{height:100%;border-radius:2px;background:var(--accent)}
+  .bar-pct{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);min-width:32px}
   .bar-fill.orange{background:var(--orange)}
   .bar-fill.teal{background:var(--accent2)}
   .bar-fill.red{background:var(--red)}
@@ -455,16 +456,17 @@ function aggByCiudad(data) {
     ticket: d.ordenes>0 ? d.revenue/d.ordenes : 0
   })).sort((a,b)=>b.revenue-a.revenue);
 }
-function aggByCliente(data) {
+function aggByCliente(data, limit=10) {
   const map={};
   data.forEach(v=>{
     if (!map[v.cliente]) map[v.cliente]={revenue:0,ordenes:0,ciudad:v.ciudad};
     map[v.cliente].revenue+=v.total; map[v.cliente].ordenes++;
   });
-  return Object.entries(map).map(([cliente,d])=>({
+  const sorted=Object.entries(map).map(([cliente,d])=>({
     cliente, revenue:d.revenue, ordenes:d.ordenes, ciudad:d.ciudad,
     ticket:d.ordenes>0?d.revenue/d.ordenes:0, ltv:d.revenue
-  })).sort((a,b)=>b.revenue-a.revenue).slice(0,10);
+  })).sort((a,b)=>b.revenue-a.revenue);
+  return limit?sorted.slice(0,limit):sorted;
 }
 function aggByMes(data) {
   const map={};
@@ -534,18 +536,13 @@ function renderVentas() {
   charts['chartNuevosRec']=new Chart('chartNuevosRec',{type:'bar',data:{labels:top10nr.map(d=>d.ciudad),datasets:[{label:'Nuevos',data:top10nr.map(d=>d.nuevos),backgroundColor:ACCENT,borderRadius:0,borderSkipped:false},{label:'Recurrentes',data:top10nr.map(d=>d.recurrentes),backgroundColor:'rgba(61,255,208,0.5)',borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',plugins:{legend:{display:true,labels:{color:'#7a7a8a',font:{family:'DM Mono',size:10}}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw}}},scales:{x:{stacked:true,grid:{color:'#1a1a22'},ticks:{color:'#4a4a56'}},y:{stacked:true,grid:{display:false},ticks:{color:'#e8e8ef',font:{family:'Poppins',size:10}}}}}});
 
   // Pareto
-  const allClientes=aggByCliente(filteredVentas.length>0?filteredVentas:RAW_VENTAS);
-  const allClientesFull=(() => {
-    const map={};
-    filteredVentas.forEach(v=>{ if(!map[v.cliente]) map[v.cliente]=0; map[v.cliente]+=v.total; });
-    return Object.entries(map).sort((a,b)=>b[1]-a[1]);
-  })();
-  const totalPar=allClientesFull.reduce((s,[,v])=>s+v,0);
+  const allClientes=aggByCliente(data);
+  const allClientesFull=aggByCliente(data,0);
+  const totalPar=allClientesFull.reduce((s,c)=>s+c.revenue,0);
   let cum=0;
-  const cumPct=allClientesFull.map(([,v])=>{ cum+=v; return +((cum/totalPar)*100).toFixed(1); });
-  const n=allClientesFull.length;
+  const cumPct=allClientesFull.map(c=>{ cum+=c.revenue; return +((cum/totalPar)*100).toFixed(1); });
   destroyChart('chartPareto');
-  charts['chartPareto']=new Chart('chartPareto',{type:'bar',data:{labels:allClientesFull.map(([c])=>c),datasets:[{type:'bar',data:allClientesFull.map(([,v])=>v/totalPar*100),backgroundColor:'rgba(200,241,53,0.4)',borderRadius:2,borderSkipped:false,yAxisID:'y'},{type:'line',data:cumPct,borderColor:ACCENT2,borderWidth:2,pointRadius:0,tension:0.3,fill:false,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{grid:{color:'#1a1a22'},ticks:{color:'#4a4a56',callback:v=>v+'%'},title:{display:true,text:'% revenue individual',color:'#4a4a56',font:{size:10}}},y2:{position:'right',grid:{display:false},min:0,max:100,ticks:{color:'#4a4a56',callback:v=>v+'%'},title:{display:true,text:'% acumulado',color:'#4a4a56',font:{size:10}}}},plugins:{tooltip:{callbacks:{label:c=>c.dataset.type==='bar'?' '+c.raw.toFixed(1)+'% del revenue':' Acumulado: '+c.raw+'%'}}}}});
+  charts['chartPareto']=new Chart('chartPareto',{type:'bar',data:{labels:allClientesFull.map(c=>c.cliente),datasets:[{type:'bar',data:allClientesFull.map(c=>c.revenue/totalPar*100),backgroundColor:'rgba(200,241,53,0.4)',borderRadius:2,borderSkipped:false,yAxisID:'y'},{type:'line',data:cumPct,borderColor:ACCENT2,borderWidth:2,pointRadius:0,tension:0.3,fill:false,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{grid:{color:'#1a1a22'},ticks:{color:'#4a4a56',callback:v=>v+'%'},title:{display:true,text:'% revenue individual',color:'#4a4a56',font:{size:10}}},y2:{position:'right',grid:{display:false},min:0,max:100,ticks:{color:'#4a4a56',callback:v=>v+'%'},title:{display:true,text:'% acumulado',color:'#4a4a56',font:{size:10}}}},plugins:{tooltip:{callbacks:{label:c=>c.dataset.type==='bar'?' '+c.raw.toFixed(1)+'% del revenue':' Acumulado: '+c.raw+'%'}}}}});
 
   // Ticket
   const sorted_t=[...ciudadData].filter(d=>d.ordenes>2).sort((a,b)=>b.ticket-a.ticket).slice(0,12);
@@ -570,7 +567,7 @@ function renderTableClientes(data, totalRev) {
   const maxRev=data[0]?.revenue||1;
   document.getElementById('tbodyClientes').innerHTML=data.map((c,i)=>{
     const pct=(c.revenue/totalRev*100).toFixed(1), barW=(c.revenue/maxRev*100).toFixed(0);
-    return `<tr><td class="rank">${String(i+1).padStart(2,'0')}</td><td><span class="city-name">${c.cliente}</span></td><td><span class="pill teal">${c.ciudad||'—'}</span></td><td class="money"><strong>${fmtFull(c.revenue)}</strong></td><td>${c.ordenes}</td><td class="money">${fmtK(c.ticket)}</td><td class="money">${fmtM(c.ltv)}</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${barW}%"></div></div><span style="font-family:DM Mono;font-size:10px;color:var(--text-dim);width:34px">${pct}%</span></div></td></tr>`;
+    return `<tr><td class="rank">${String(i+1).padStart(2,'0')}</td><td><span class="city-name">${c.cliente}</span></td><td><span class="pill teal">${c.ciudad||'—'}</span></td><td class="money"><strong>${fmtFull(c.revenue)}</strong></td><td>${c.ordenes}</td><td class="money">${fmtK(c.ticket)}</td><td class="money">${fmtM(c.ltv)}</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${barW}%"></div></div><span class="bar-pct">${pct}%</span></div></td></tr>`;
   }).join('');
 }
 function renderTableCiudad(data) {
@@ -578,7 +575,7 @@ function renderTableCiudad(data) {
   document.getElementById('tbodyVentas').innerHTML=data.map((d,i)=>{
     const pct=(d.revenue/totalRev*100).toFixed(1), barW=(d.revenue/maxRev*100).toFixed(0);
     const label=d.ciudad==='X'||d.ciudad==='-'?'<span style="color:var(--text-dim)">Sin datos</span>':`<span class="city-name">${d.ciudad}</span>`;
-    return `<tr><td class="rank">${String(i+1).padStart(2,'0')}</td><td>${label}</td><td class="money"><strong>${fmtFull(d.revenue)}</strong></td><td>${d.ordenes}</td><td>${d.clientes}</td><td class="money">${fmtM(d.ltv)}</td><td class="money">${fmtK(d.ticket)}</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${barW}%"></div></div><span style="font-family:DM Mono;font-size:10px;color:var(--text-dim);width:34px">${pct}%</span></div></td></tr>`;
+    return `<tr><td class="rank">${String(i+1).padStart(2,'0')}</td><td>${label}</td><td class="money"><strong>${fmtFull(d.revenue)}</strong></td><td>${d.ordenes}</td><td>${d.clientes}</td><td class="money">${fmtM(d.ltv)}</td><td class="money">${fmtK(d.ticket)}</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${barW}%"></div></div><span class="bar-pct">${pct}%</span></div></td></tr>`;
   }).join('');
 }
 
@@ -610,9 +607,9 @@ function renderOportunidades() {
   const maxPot=Math.max(...top15.map(o=>o.rev_potencial));
 
   // Charts
-  new Chart('chartOporRev',{type:'bar',data:{labels:top15.map(o=>o.ciudad),datasets:[{data:top15.map(o=>o.rev_potencial),backgroundColor:top15.map((_,i)=>i<4?ORANGE:'rgba(249,115,22,0.35)'),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',scales:{x:{grid:{color:'#1a1a22'},ticks:{color:'#4a4a56',callback:v=>fmtM(v)}},y:{grid:{display:false},ticks:{color:'#e8e8ef',font:{family:'Poppins',size:10}}}},plugins:{tooltip:{callbacks:{label:c=>' '+fmtFull(c.raw)+' / año'}}}}});
+  destroyChart('chartOporRev'); charts['chartOporRev']=new Chart('chartOporRev',{type:'bar',data:{labels:top15.map(o=>o.ciudad),datasets:[{data:top15.map(o=>o.rev_potencial),backgroundColor:top15.map((_,i)=>i<4?ORANGE:'rgba(249,115,22,0.35)'),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',scales:{x:{grid:{color:'#1a1a22'},ticks:{color:'#4a4a56',callback:v=>fmtM(v)}},y:{grid:{display:false},ticks:{color:'#e8e8ef',font:{family:'Poppins',size:10}}}},plugins:{tooltip:{callbacks:{label:c=>' '+fmtFull(c.raw)+' / año'}}}}});
 
-  new Chart('chartOporLeads',{type:'bar',data:{labels:top15.map(o=>o.ciudad),datasets:[{data:top15.map(o=>o.sin_convertir),backgroundColor:top15.map((_,i)=>i<4?'rgba(255,77,109,0.9)':'rgba(255,77,109,0.35)'),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',scales:{x:{grid:{color:'#1a1a22'},ticks:{color:'#4a4a56'}},y:{grid:{display:false},ticks:{color:'#e8e8ef',font:{family:'Poppins',size:10}}}},plugins:{tooltip:{callbacks:{label:c=>' '+c.raw+' leads sin convertir'}}}}});
+  destroyChart('chartOporLeads'); charts['chartOporLeads']=new Chart('chartOporLeads',{type:'bar',data:{labels:top15.map(o=>o.ciudad),datasets:[{data:top15.map(o=>o.sin_convertir),backgroundColor:top15.map((_,i)=>i<4?'rgba(255,77,109,0.9)':'rgba(255,77,109,0.35)'),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',scales:{x:{grid:{color:'#1a1a22'},ticks:{color:'#4a4a56'}},y:{grid:{display:false},ticks:{color:'#e8e8ef',font:{family:'Poppins',size:10}}}},plugins:{tooltip:{callbacks:{label:c=>' '+c.raw+' leads sin convertir'}}}}});
 
   renderTableOpor(oporDataG);
 
@@ -625,7 +622,7 @@ function renderTableOpor(data) {
   document.getElementById('tbodyOpor').innerHTML=data.map((o,i)=>{
     const barW=(o.rev_potencial/maxPot*100).toFixed(0);
     const tasaClass=o.tasa>=20?'green':o.tasa>=10?'teal':o.tasa>0?'blue':'red';
-    return `<tr><td class="rank">${String(i+1).padStart(2,'0')}</td><td><span class="city-name">${o.ciudad}</span></td><td>${o.leads_buenos}</td><td>${o.convertidos}</td><td><strong>${o.sin_convertir}</strong></td><td><span class="pill ${tasaClass}">${o.tasa}%</span></td><td class="money">${o.rev_actual>0?fmtFull(o.rev_actual):'—'}</td><td class="money"><strong style="color:var(--orange)">${fmtFull(o.rev_potencial)}</strong></td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill orange" style="width:${barW}%"></div></div><span style="font-family:DM Mono;font-size:10px;color:var(--text-dim);width:36px">${barW}%</span></div></td></tr>`;
+    return `<tr><td class="rank">${String(i+1).padStart(2,'0')}</td><td><span class="city-name">${o.ciudad}</span></td><td>${o.leads_buenos}</td><td>${o.convertidos}</td><td><strong>${o.sin_convertir}</strong></td><td><span class="pill ${tasaClass}">${o.tasa}%</span></td><td class="money">${o.rev_actual>0?fmtFull(o.rev_actual):'—'}</td><td class="money"><strong style="color:var(--orange)">${fmtFull(o.rev_potencial)}</strong></td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill orange" style="width:${barW}%"></div></div><span class="bar-pct">${barW}%</span></div></td></tr>`;
   }).join('');
 }
 
@@ -670,7 +667,7 @@ function renderLeadsTable() {
   document.getElementById('tbodyLeads').innerHTML=leadsTableData.map((d,i)=>{
     const pct=(d.leads/maxCount*100).toFixed(0), tasaClass=d.tasa>=20?'green':d.tasa>=10?'teal':d.tasa>0?'blue':'red';
     const label=d.ciudad==='X'||d.ciudad==='-'?'<span style="color:var(--text-dim)">Sin datos</span>':`<span class="city-name">${d.ciudad}</span>`;
-    return `<tr><td class="rank">${String(i+1).padStart(2,'0')}</td><td>${label}</td><td><strong>${d.leads}</strong></td><td>${d.conv}</td><td><span class="pill ${tasaClass}">${d.tasa}%</span></td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span style="font-family:DM Mono;font-size:10px;color:var(--text-dim);width:32px">${pct}%</span></div></td></tr>`;
+    return `<tr><td class="rank">${String(i+1).padStart(2,'0')}</td><td>${label}</td><td><strong>${d.leads}</strong></td><td>${d.conv}</td><td><span class="pill ${tasaClass}">${d.tasa}%</span></td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span class="bar-pct">${pct}%</span></div></td></tr>`;
   }).join('');
 }
 
