@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCW — Análisis Geográfico Buenos Aires</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0a0b;
+    --surface:   #111113;
+    --surface2:  #18181c;
+    --border:    #222228;
+    --accent:    #c8f135;
+    --accent2:   #3dffd0;
+    --muted:     #4a4a56;
+    --text:      #e8e8ef;
+    --text-dim:  #7a7a8a;
+    --red:       #ff4d6d;
+    --blue:      #3b82f6;
+    --orange:    #f97316;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,11,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .header-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 24px;
+  }
+
+  .header-meta span { display: flex; align-items: center; gap: 6px; }
+  .header-meta .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+  /* ── NAV TABS ── */
+  .tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 48px;
+    background: var(--bg);
+    position: sticky;
+    top: 64px;
+    z-index: 99;
+    gap: 0;
+  }
+
+  .tab {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    padding: 16px 24px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    user-select: none;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 48px 48px 80px; }
+  .section.active { display: block; }
+
+  /* ── HERO BAND ── */
+  .hero-band {
+    background: linear-gradient(135deg, #0f1a06 0%, #0d1510 50%, #0a0a0b 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px 48px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-band::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(200,241,53,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .hero-sub {
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  /* ── KPI GRID ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .kpi-card:hover { border-color: var(--accent); }
+
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .kpi-card:hover::after { opacity: 1; }
+
+  .kpi-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .kpi-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-value.accent { color: var(--accent); }
+  .kpi-value.accent2 { color: var(--accent2); }
+
+  .kpi-delta {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── CHART GRID ── */
+  .chart-grid {
+    display: grid;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .chart-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .chart-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .chart-grid.cols-1-2 { grid-template-columns: 1fr 2fr; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px;
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .chart-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .chart-subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .chart-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(200,241,53,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(200,241,53,0.2);
+    white-space: nowrap;
+  }
+
+  .chart-wrap { position: relative; }
+  .chart-wrap canvas { max-height: 280px; }
+  .chart-wrap.tall canvas { max-height: 360px; }
+  .chart-wrap.short canvas { max-height: 200px; }
+
+  /* ── TABLA ── */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+
+  .table-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .table-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  thead th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 14px 20px;
+    text-align: left;
+    font-weight: 400;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+
+  tbody td {
+    padding: 14px 20px;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .rank {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .city-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .money {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .pill.green { background: rgba(200,241,53,0.12); color: var(--accent); }
+  .pill.red   { background: rgba(255,77,109,0.12); color: var(--red); }
+  .pill.blue  { background: rgba(59,130,246,0.12); color: var(--blue); }
+  .pill.orange{ background: rgba(249,115,22,0.12); color: var(--orange); }
+  .pill.teal  { background: rgba(61,255,208,0.12); color: var(--accent2); }
+
+  /* ── INLINE BAR ── */
+  .bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .bar-track {
+    flex: 1; height: 4px; background: var(--border);
+    border-radius: 2px; overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+  .bar-fill.red { background: var(--red); }
+  .bar-fill.blue { background: var(--blue); }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── DONUT LEGEND ── */
+  .donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+
+  .legend-left { display: flex; align-items: center; gap: 8px; }
+
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .legend-label { color: var(--text-dim); }
+  .legend-val { font-family: 'DM Mono', monospace; color: var(--text); }
+
+  /* ── FOOTER ── */
+  .report-footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-grid.cols-2,
+    .chart-grid.cols-3,
+    .chart-grid.cols-1-2 { grid-template-columns: 1fr; }
+    header, .tab-bar, .section { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    TCW — Análisis Geográfico
+  </div>
+  <div class="header-meta">
+    <span><span class="dot"></span>Buenos Aires</span>
+    <span>1.229 leads · 3.750 ventas</span>
+    <span>Jun 2024 — Mar 2026</span>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('leads', this)">Análisis de Leads</div>
+  <div class="tab" onclick="switchTab('ventas', this)">Análisis de Ventas</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECCIÓN LEADS
+══════════════════════════════════════════════════ -->
+<div class="section active" id="section-leads">
+
+  <div class="hero-band">
+    <div class="hero-label">// Leads · Buenos Aires</div>
+    <div class="hero-title">Base de Prospectos</div>
+    <div class="hero-sub">Análisis completo de leads captados en el territorio bonaerense</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Leads</div>
+      <div class="kpi-value accent">1.229</div>
+      <div class="kpi-delta">Buenos Aires completo</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Ciudades cubiertas</div>
+      <div class="kpi-value">227</div>
+      <div class="kpi-delta">zonas distintas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Calificación Buena</div>
+      <div class="kpi-value accent2">64.5%</div>
+      <div class="kpi-delta">793 leads</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Canal Principal</div>
+      <div class="kpi-value" style="font-size:24px;">BOT</div>
+      <div class="kpi-delta">95.1% del total</div>
+    </div>
+  </div>
+
+  <!-- CHART ROW 1: Top ciudades + Calificación -->
+  <p class="section-title">Distribución Geográfica</p>
+  <div class="chart-grid cols-1-2">
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Calificación de Leads</div>
+          <div class="chart-subtitle">Calidad del pipeline</div>
+        </div>
+        <span class="chart-badge">1.229 leads</span>
+      </div>
+      <div class="chart-wrap short">
+        <canvas id="chartCalidad"></canvas>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#c8f135"></div><span class="legend-label">Buena</span></div>
+          <span class="legend-val">793 · 64.5%</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#ff4d6d"></div><span class="legend-label">Mala</span></div>
+          <span class="legend-val">371 · 30.2%</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#4a4a56"></div><span class="legend-label">Nulo/Otro</span></div>
+          <span class="legend-val">65 · 5.3%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Top 15 Ciudades por Volumen de Leads</div>
+          <div class="chart-subtitle">Ciudades/barrios con mayor captación</div>
+        </div>
+      </div>
+      <div class="chart-wrap tall">
+        <canvas id="chartLeadsCiudad"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHART ROW 2: Canal + Tipo -->
+  <p class="section-title">Perfil de Leads</p>
+  <div class="chart-grid cols-3">
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Canal de Adquisición</div>
+          <div class="chart-subtitle">Origen de los leads</div>
+        </div>
+      </div>
+      <div class="chart-wrap short">
+        <canvas id="chartCanal"></canvas>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#c8f135"></div><span class="legend-label">BOT</span></div>
+          <span class="legend-val">1.169 · 95.1%</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#3dffd0"></div><span class="legend-label">Instagram</span></div>
+          <span class="legend-val">54 · 4.4%</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#3b82f6"></div><span class="legend-label">Otros</span></div>
+          <span class="legend-val">6 · 0.5%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Tipo de Cliente</div>
+          <div class="chart-subtitle">Segmento del prospecto</div>
+        </div>
+      </div>
+      <div class="chart-wrap short">
+        <canvas id="chartTipo"></canvas>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#c8f135"></div><span class="legend-label">Gastronómico</span></div>
+          <span class="legend-val">1.044 · 84.9%</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#3dffd0"></div><span class="legend-label">Catering</span></div>
+          <span class="legend-val">74 · 6.0%</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#4a4a56"></div><span class="legend-label">Sin definir/Otro</span></div>
+          <span class="legend-val">111 · 9.0%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Tasa de Conversión</div>
+          <div class="chart-subtitle">Top ciudades (mín. 5 leads)</div>
+        </div>
+      </div>
+      <div class="chart-wrap short">
+        <canvas id="chartConvLead"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TABLA: Top ciudades con conversión -->
+  <p class="section-title">Tabla Completa por Ciudad</p>
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Leads por Ciudad — Buenos Aires</span>
+      <span class="chart-badge">Top 15 ciudades</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Ciudad / Barrio</th>
+          <th>Leads</th>
+          <th>Convertidos</th>
+          <th>Tasa Conversión</th>
+          <th>Volumen relativo</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyLeads"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECCIÓN VENTAS
+══════════════════════════════════════════════════ -->
+<div class="section" id="section-ventas">
+
+  <div class="hero-band">
+    <div class="hero-label">// Ventas · Buenos Aires</div>
+    <div class="hero-title">Performance Comercial</div>
+    <div class="hero-sub">Revenue, ticket promedio y evolución mensual por zona geográfica</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Revenue Total</div>
+      <div class="kpi-value accent" style="font-size:26px;">$325.4M</div>
+      <div class="kpi-delta">AR$ facturados</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Ticket Promedio</div>
+      <div class="kpi-value">$86.8K</div>
+      <div class="kpi-delta">por orden</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Clientes Únicos</div>
+      <div class="kpi-value accent2">161</div>
+      <div class="kpi-delta">con compras</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Órdenes Totales</div>
+      <div class="kpi-value">3.750</div>
+      <div class="kpi-delta">transacciones</div>
+    </div>
+  </div>
+
+  <!-- CHART: Evolución mensual -->
+  <p class="section-title">Tendencia Temporal</p>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Revenue Mensual</div>
+          <div class="chart-subtitle">Jun 2024 — Mar 2026</div>
+        </div>
+        <span class="chart-badge">+3.206% acumulado</span>
+      </div>
+      <div class="chart-wrap" style="position:relative; height:240px;">
+        <canvas id="chartMensual"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHART ROW: Ciudad + Canal -->
+  <p class="section-title">Distribución Geográfica y de Canal</p>
+  <div class="chart-grid cols-2">
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Revenue por Ciudad (Top 12)</div>
+          <div class="chart-subtitle">Facturación acumulada</div>
+        </div>
+      </div>
+      <div class="chart-wrap tall">
+        <canvas id="chartRevCiudad"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Ticket Promedio por Ciudad</div>
+          <div class="chart-subtitle">Valor de compra por zona</div>
+        </div>
+      </div>
+      <div class="chart-wrap tall">
+        <canvas id="chartTicket"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHART ROW: Scatter + Canal -->
+  <p class="section-title">Eficiencia y Canal</p>
+  <div class="chart-grid cols-2">
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Órdenes vs Revenue por Ciudad</div>
+          <div class="chart-subtitle">Frecuencia vs valor generado</div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:280px;">
+        <canvas id="chartScatter"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Canal de Adquisición</div>
+          <div class="chart-subtitle">Revenue por canal</div>
+        </div>
+      </div>
+      <div class="chart-wrap short">
+        <canvas id="chartCanalVentas"></canvas>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#c8f135"></div><span class="legend-label">BOT</span></div>
+          <span class="legend-val">$318.8M · 97.8%</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#3dffd0"></div><span class="legend-label">Instagram</span></div>
+          <span class="legend-val">$6.4M · 2.0%</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#3b82f6"></div><span class="legend-label">Facebook/Otros</span></div>
+          <span class="legend-val">$0.2M · 0.1%</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TABLA Top Clientes -->
+  <p class="section-title">Top Clientes</p>
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Ranking por Revenue — Top 10 Clientes</span>
+      <span class="chart-badge">Buenos Aires</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Cliente</th>
+          <th>Ciudad</th>
+          <th>Revenue Total</th>
+          <th>Órdenes</th>
+          <th>Ticket Prom.</th>
+          <th>Participación</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyClientes"></tbody>
+    </table>
+  </div>
+
+  <!-- TABLA Ciudad -->
+  <p class="section-title">Tabla Completa por Ciudad</p>
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Ventas por Ciudad — Buenos Aires</span>
+      <span class="chart-badge">Top 15 ciudades</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Ciudad / Barrio</th>
+          <th>Revenue</th>
+          <th>Órdenes</th>
+          <th>Clientes</th>
+          <th>Ticket Promedio</th>
+          <th>Revenue relativo</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyVentas"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="report-footer">
+  <span>TCW × Nebulab — Análisis Geográfico BA</span>
+  <span>Generado: Abril 2026</span>
+</div>
+
+<script>
+/* ── DATA ────────────────────────────────────────────────── */
+const DATA = {
+  leads: {
+    ciudades: ['X','PALERMO','CABA','RECOLETA','CABALLITO','-','QUILMES','BELGRANO','VILLA CRESPO','TIGRE','RAMOS MEJIA','VILLA URQUIZA','LANUS','ALMAGRO','MONSERRAT'],
+    counts:   [134, 60, 47, 37, 29, 28, 25, 25, 21, 19, 19, 18, 16, 16, 16],
+    conv:     [7,   10,  6, 10,  3,  1,  5,  5,  4,  3,  2,  1,  2,  1,  0],
+    tasa:     [5.2, 16.7, 12.8, 27.0, 10.3, 3.6, 20.0, 20.0, 19.0, 15.8, 10.5, 5.6, 12.5, 6.2, 0.0]
+  },
+  ventas: {
+    ciudades: ['PALERMO','SAN MARTIN','RECOLETA','LA PLATA','CABA','VILLA DEL PARQUE','BARRACAS','ALDO BONZI','CENTRO','TIGRE','COLEGIALES','X','OLIVOS','PUERTO MADERO','PARQUE CHACABUCO'],
+    revenue:  [21615872, 20643039, 19045071, 17773740, 16339394, 14855371, 13589904, 13204975, 9622682, 9587509, 9230096, 8427132, 7444390, 7115780, 6882673],
+    ordenes:  [258, 94, 203, 27, 301, 188, 119, 139, 73, 135, 72, 70, 113, 29, 54],
+    clientes: [10, 2, 10, 1, 6, 5, 2, 1, 5, 3, 2, 7, 1, 1, 2],
+    ticket:   [83782, 219607, 93818, 658287, 54284, 79018, 114201, 94999, 131818, 71019, 128196, 120388, 65880, 245372, 127457],
+    mensual: {
+      labels: ['Jun 24','Jul 24','Ago 24','Sep 24','Oct 24','Nov 24','Dic 24','Ene 25','Feb 25','Mar 25','Abr 25','May 25','Jun 25','Jul 25','Ago 25','Sep 25','Oct 25','Nov 25','Dic 25','Ene 26','Feb 26','Mar 26'],
+      values: [971310, 5443737, 5531122, 4667520, 4558252, 7302214, 7748032, 4805913, 6315944, 10233872, 12815243, 11683819, 13352930, 26076510, 33962932, 33784422, 30623935, 21617762, 21804673, 15594877, 22310401, 22752174]
+    },
+    clientes_top: [
+      { n:'CANDYGUAY',       ciudad:'SAN MARTIN',       rev:19374321, ord:65,  ticket:297913 },
+      { n:'LA CAPITAL',      ciudad:'LA PLATA',          rev:17773740, ord:27,  ticket:658286 },
+      { n:'LA TIA',          ciudad:'ALDO BONZI',        rev:13204975, ord:139, ticket:95000  },
+      { n:'BODEGON TIA ZELMIRA', ciudad:'RECOLETA',      rev:11688661, ord:94,  ticket:124348 },
+      { n:'PANE DOLCE',      ciudad:'BARRACAS',          rev:10880638, ord:79,  ticket:137730 },
+      { n:'ALOCASIA',        ciudad:'COLEGIALES',        rev:9210416,  ord:71,  ticket:129724 },
+      { n:'MALEVO',          ciudad:'VILLA DEL PARQUE',  rev:8602672,  ord:115, ticket:74806  },
+      { n:'SHELL FORD',      ciudad:'TIGRE',             rev:8033541,  ord:117, ticket:68663  },
+      { n:'TIL CAFE',        ciudad:'OLIVOS',            rev:7444390,  ord:113, ticket:65879  },
+      { n:'LA BODEGA 1810',  ciudad:'PALERMO',           rev:7115780,  ord:29,  ticket:245372 }
+    ]
+  }
+};
+
+const fmt = n => '$' + (n/1e6).toFixed(1) + 'M';
+const fmtK = n => '$' + (n/1e3).toFixed(0) + 'K';
+const fmtFull = n => '$' + n.toLocaleString('es-AR');
+const totalRev = 325374477;
+
+/* ── DEFAULTS ── */
+Chart.defaults.color = '#7a7a8a';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.legend.display = false;
+
+const ACCENT  = '#c8f135';
+const ACCENT2 = '#3dffd0';
+const RED     = '#ff4d6d';
+const BLUE    = '#3b82f6';
+const ORANGE  = '#f97316';
+const MUTED   = '#2a2a32';
+
+/* ── HELPERS ── */
+function makeGrad(ctx, color, alpha=0.15) {
+  const g = ctx.createLinearGradient(0,0,0,300);
+  g.addColorStop(0, color.replace(')', `,${alpha})`).replace('rgb','rgba').replace('#','').padStart(7,'#'));
+  g.addColorStop(1, 'transparent');
+  return g;
+}
+
+function accentGradient(ctx, h=300) {
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0, 'rgba(200,241,53,0.18)');
+  g.addColorStop(1, 'rgba(200,241,53,0.01)');
+  return g;
+}
+
+/* ── LEADS CHARTS ── */
+
+// Calidad donut
+new Chart('chartCalidad', {
+  type: 'doughnut',
+  data: {
+    labels: ['Buena','Mala','Nulo/Otro'],
+    datasets: [{ data: [793,371,65], backgroundColor: [ACCENT, RED, '#2a2a32'], borderWidth: 0, hoverOffset: 4 }]
+  },
+  options: {
+    cutout: '72%',
+    plugins: { tooltip: { callbacks: { label: c => ` ${c.label}: ${c.raw}` } } }
+  }
+});
+
+// Canal leads donut
+new Chart('chartCanal', {
+  type: 'doughnut',
+  data: {
+    labels: ['BOT','Instagram','Otros'],
+    datasets: [{ data: [1169,54,6], backgroundColor: [ACCENT, ACCENT2, BLUE], borderWidth: 0 }]
+  },
+  options: { cutout: '72%' }
+});
+
+// Tipo leads donut
+new Chart('chartTipo', {
+  type: 'doughnut',
+  data: {
+    labels: ['Gastronómico','Catering','Otro'],
+    datasets: [{ data: [1044,74,111], backgroundColor: [ACCENT, ACCENT2, '#2a2a32'], borderWidth: 0 }]
+  },
+  options: { cutout: '72%' }
+});
+
+// Top 15 ciudades leads (horizontal bar)
+new Chart('chartLeadsCiudad', {
+  type: 'bar',
+  data: {
+    labels: DATA.leads.ciudades.slice(0,15),
+    datasets: [{
+      data: DATA.leads.counts.slice(0,15),
+      backgroundColor: DATA.leads.ciudades.slice(0,15).map((_, i) => i < 3 ? ACCENT : 'rgba(200,241,53,0.35)'),
+      borderRadius: 4,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: {
+      x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56' } },
+      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'DM Sans'" } } }
+    },
+    plugins: { tooltip: { callbacks: { label: c => ` ${c.raw} leads` } } }
+  }
+});
+
+// Tasa conversión bar
+new Chart('chartConvLead', {
+  type: 'bar',
+  data: {
+    labels: ['RECOLETA','BELGRANO','QUILMES','V.CRESPO','PALERMO','TIGRE','CABA','CABALLITO','LANUS','RAMOS M.'],
+    datasets: [{
+      data: [27.0, 20.0, 20.0, 19.0, 16.7, 15.8, 12.8, 10.3, 12.5, 10.5],
+      backgroundColor: [ACCENT2, ACCENT2, ACCENT2, ACCENT2, ACCENT, ACCENT, '#3b82f6','#3b82f6','#3b82f6','#3b82f6'],
+      borderRadius: 4,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: {
+      x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56', callback: v => v + '%' }, max: 35 },
+      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'DM Sans'", size: 10 } } }
+    },
+    plugins: { tooltip: { callbacks: { label: c => ` ${c.raw}%` } } }
+  }
+});
+
+/* ── VENTAS CHARTS ── */
+
+// Mensual area
+(function() {
+  const ctx = document.getElementById('chartMensual').getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,240);
+  grad.addColorStop(0, 'rgba(200,241,53,0.2)');
+  grad.addColorStop(1, 'rgba(200,241,53,0.01)');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: DATA.ventas.mensual.labels,
+      datasets: [{
+        data: DATA.ventas.mensual.values,
+        borderColor: ACCENT,
+        borderWidth: 2,
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: ACCENT,
+        pointBorderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56' } },
+        y: {
+          grid: { color: '#1a1a22' },
+          ticks: { color: '#4a4a56', callback: v => v >= 1e6 ? '$' + (v/1e6).toFixed(0) + 'M' : '$' + (v/1e3).toFixed(0) + 'K' }
+        }
+      },
+      plugins: { tooltip: { callbacks: { label: c => ` ${fmtFull(c.raw)}` } } }
+    }
+  });
+})();
+
+// Revenue por ciudad
+new Chart('chartRevCiudad', {
+  type: 'bar',
+  data: {
+    labels: DATA.ventas.ciudades.slice(0,12),
+    datasets: [{
+      data: DATA.ventas.revenue.slice(0,12),
+      backgroundColor: DATA.ventas.ciudades.slice(0,12).map((_,i) => i < 4 ? ACCENT : 'rgba(200,241,53,0.35)'),
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: {
+      x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56', callback: v => fmt(v) } },
+      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'DM Sans'", size: 10 } } }
+    },
+    plugins: { tooltip: { callbacks: { label: c => ` ${fmtFull(c.raw)}` } } }
+  }
+});
+
+// Ticket promedio por ciudad
+new Chart('chartTicket', {
+  type: 'bar',
+  data: {
+    labels: ['LA PLATA','PUERTO MADERO','SAN MARTIN','CENTRO','COLEGIALES','BARRACAS','X','RECOLETA','ALDO BONZI','PALERMO','V.DEL PARQUE','TIGRE'],
+    datasets: [{
+      data: [658287, 245372, 219607, 131818, 128196, 114201, 120388, 93818, 94999, 83782, 79018, 71019],
+      backgroundColor: ['rgba(61,255,208,0.9)','rgba(61,255,208,0.7)','rgba(61,255,208,0.6)',
+        ...Array(9).fill('rgba(61,255,208,0.3)')],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    scales: {
+      x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56', callback: v => fmtK(v) } },
+      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'DM Sans'", size: 10 } } }
+    },
+    plugins: { tooltip: { callbacks: { label: c => ` ${fmtK(c.raw)}` } } }
+  }
+});
+
+// Scatter ordenes vs revenue
+new Chart('chartScatter', {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      data: DATA.ventas.ciudades.slice(0,15).map((c,i) => ({ x: DATA.ventas.ordenes[i], y: DATA.ventas.revenue[i]/1e6, label: c })),
+      backgroundColor: ACCENT,
+      pointRadius: 8,
+      pointHoverRadius: 10,
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { grid: { color: '#1a1a22' }, title: { display: true, text: 'Órdenes', color: '#4a4a56' }, ticks: { color: '#4a4a56' } },
+      y: { grid: { color: '#1a1a22' }, title: { display: true, text: 'Revenue (M$)', color: '#4a4a56' }, ticks: { color: '#4a4a56', callback: v => '$' + v.toFixed(0) + 'M' } }
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: c => {
+            const pt = c.raw;
+            return ` ${pt.label}: ${pt.x} órdenes · $${pt.y.toFixed(1)}M`;
+          }
+        }
+      }
+    }
+  }
+});
+
+// Canal ventas donut
+new Chart('chartCanalVentas', {
+  type: 'doughnut',
+  data: {
+    labels: ['BOT','Instagram','Facebook/Otros'],
+    datasets: [{ data: [318815285, 6356782, 202640], backgroundColor: [ACCENT, ACCENT2, BLUE], borderWidth: 0 }]
+  },
+  options: { cutout: '72%', plugins: { tooltip: { callbacks: { label: c => ` ${c.label}: ${fmt(c.raw)}` } } } }
+});
+
+/* ── TABLAS ── */
+
+// Tabla leads
+(function() {
+  const tbody = document.getElementById('tbodyLeads');
+  const max = Math.max(...DATA.leads.counts);
+  DATA.leads.ciudades.forEach((ciudad, i) => {
+    const pct = (DATA.leads.counts[i] / max * 100).toFixed(0);
+    const tasa = DATA.leads.tasa[i];
+    const tasaClass = tasa >= 20 ? 'green' : tasa >= 10 ? 'teal' : tasa > 0 ? 'blue' : 'red';
+    const label = ciudad === 'X' || ciudad === '-' ? '<span style="color:var(--text-dim)">Sin datos</span>' : `<span class="city-name">${ciudad}</span>`;
+    tbody.innerHTML += `
+      <tr>
+        <td class="rank">${String(i+1).padStart(2,'0')}</td>
+        <td>${label}</td>
+        <td><strong>${DATA.leads.counts[i]}</strong></td>
+        <td>${DATA.leads.conv[i]}</td>
+        <td><span class="pill ${tasaClass}">${tasa}%</span></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <span style="font-family:DM Mono;font-size:11px;color:var(--text-dim);width:32px">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+  });
+})();
+
+// Tabla clientes
+(function() {
+  const tbody = document.getElementById('tbodyClientes');
+  DATA.ventas.clientes_top.forEach((c,i) => {
+    const pct = (c.rev / totalRev * 100).toFixed(1);
+    const barW = (c.rev / DATA.ventas.clientes_top[0].rev * 100).toFixed(0);
+    tbody.innerHTML += `
+      <tr>
+        <td class="rank">${String(i+1).padStart(2,'0')}</td>
+        <td><span class="city-name">${c.n}</span></td>
+        <td><span class="pill teal">${c.ciudad}</span></td>
+        <td class="money"><strong>${fmtFull(c.rev)}</strong></td>
+        <td>${c.ord}</td>
+        <td class="money">${fmtK(c.ticket)}</td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill" style="width:${barW}%"></div></div>
+            <span style="font-family:DM Mono;font-size:11px;color:var(--text-dim);width:36px">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+  });
+})();
+
+// Tabla ventas ciudad
+(function() {
+  const tbody = document.getElementById('tbodyVentas');
+  const maxRev = Math.max(...DATA.ventas.revenue);
+  DATA.ventas.ciudades.forEach((ciudad, i) => {
+    const pct = (DATA.ventas.revenue[i] / totalRev * 100).toFixed(1);
+    const barW = (DATA.ventas.revenue[i] / maxRev * 100).toFixed(0);
+    const label = ciudad === 'X' ? '<span style="color:var(--text-dim)">Sin datos</span>' : `<span class="city-name">${ciudad}</span>`;
+    tbody.innerHTML += `
+      <tr>
+        <td class="rank">${String(i+1).padStart(2,'0')}</td>
+        <td>${label}</td>
+        <td class="money"><strong>${fmtFull(DATA.ventas.revenue[i])}</strong></td>
+        <td>${DATA.ventas.ordenes[i]}</td>
+        <td>${DATA.ventas.clientes[i]}</td>
+        <td class="money">${fmtK(DATA.ventas.ticket[i])}</td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill" style="width:${barW}%"></div></div>
+            <span style="font-family:DM Mono;font-size:11px;color:var(--text-dim);width:36px">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+  });
+})();
+
+/* ── TABS ── */
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('section-' + name).classList.add('active');
+}
+</script>
+</body>
+</html>
