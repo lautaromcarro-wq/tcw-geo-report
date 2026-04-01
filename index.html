@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TCW — Análisis Geográfico Buenos Aires</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg:        #0a0a0b;
@@ -27,7 +27,7 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-size: 14px;
     line-height: 1.6;
     min-height: 100vh;
@@ -49,7 +49,7 @@
   }
 
   .logo {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-weight: 800;
     font-size: 20px;
     letter-spacing: -0.5px;
@@ -96,7 +96,7 @@
   }
 
   .tab {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-dim);
@@ -145,7 +145,7 @@
   }
 
   .hero-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-size: 36px;
     font-weight: 800;
     letter-spacing: -1px;
@@ -200,7 +200,7 @@
   }
 
   .kpi-value {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-size: 32px;
     font-weight: 800;
     letter-spacing: -1px;
@@ -246,7 +246,7 @@
   }
 
   .chart-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-size: 15px;
     font-weight: 700;
     letter-spacing: -0.3px;
@@ -292,7 +292,7 @@
   }
 
   .table-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-size: 15px;
     font-weight: 700;
   }
@@ -339,7 +339,7 @@
   }
 
   .city-name {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-weight: 600;
     font-size: 13px;
   }
@@ -375,7 +375,7 @@
 
   /* ── SECTION TITLE ── */
   .section-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 2px;
@@ -935,7 +935,7 @@ new Chart('chartLeadsCiudad', {
     indexAxis: 'y',
     scales: {
       x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56' } },
-      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'DM Sans'" } } }
+      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'Poppins'" } } }
     },
     plugins: { tooltip: { callbacks: { label: c => ` ${c.raw} leads` } } }
   }
@@ -957,7 +957,7 @@ new Chart('chartConvLead', {
     indexAxis: 'y',
     scales: {
       x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56', callback: v => v + '%' }, max: 35 },
-      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'DM Sans'", size: 10 } } }
+      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'Poppins'", size: 10 } } }
     },
     plugins: { tooltip: { callbacks: { label: c => ` ${c.raw}%` } } }
   }
@@ -1018,7 +1018,7 @@ new Chart('chartRevCiudad', {
     indexAxis: 'y',
     scales: {
       x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56', callback: v => fmt(v) } },
-      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'DM Sans'", size: 10 } } }
+      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'Poppins'", size: 10 } } }
     },
     plugins: { tooltip: { callbacks: { label: c => ` ${fmtFull(c.raw)}` } } }
   }
@@ -1040,7 +1040,7 @@ new Chart('chartTicket', {
     indexAxis: 'y',
     scales: {
       x: { grid: { color: '#1a1a22' }, ticks: { color: '#4a4a56', callback: v => fmtK(v) } },
-      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'DM Sans'", size: 10 } } }
+      y: { grid: { display: false }, ticks: { color: '#e8e8ef', font: { family: "'Poppins'", size: 10 } } }
     },
     plugins: { tooltip: { callbacks: { label: c => ` ${fmtK(c.raw)}` } } }
   }
